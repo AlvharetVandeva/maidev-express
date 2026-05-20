@@ -63,13 +63,25 @@ export function validateMasterValues(slug: string, values: Record<string, Record
   return null;
 }
 
-export async function listMasterRecords(slug: string): Promise<MasterRecord[]> {
+export async function listMasterRecords(
+  slug: string,
+  search = "",
+): Promise<MasterRecord[]> {
   const config = getMasterConfig(slug);
   if (!config) throw new Error("Jenis data master tidak ditemukan");
+  const keyword = search.trim();
+  const searchableFields = config.fields.filter((field) => field.table || field.required);
+  const searchCondition =
+    keyword && searchableFields.length > 0
+      ? searchableFields
+          .map((field) => sql`${columnIdentifier(field.name)}::text ILIKE ${`%${keyword}%`}`)
+          .reduce((previous, current) => sql`${previous} OR ${current}`)
+      : sql`TRUE`;
 
   const rows = await sql<MasterRecord[]>`
     SELECT *
     FROM ${tableIdentifier(config.tableName)}
+    WHERE ${searchCondition}
     ORDER BY id DESC
   `;
 

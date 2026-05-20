@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 
-import { EmptyState } from "@/components/shared/empty-state";
 import { MasterDataManager } from "@/features/master-data/components/master-data-manager";
 import { getMasterConfig } from "@/features/master-data/config";
 import {
@@ -12,10 +11,14 @@ export const dynamic = "force-dynamic";
 
 export default async function MasterDataDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ jenis: string }>;
+  searchParams: Promise<{ q?: string }>;
 }) {
   const { jenis } = await params;
+  const { q } = await searchParams;
+  const search = q?.trim() ?? "";
   const config = getMasterConfig(jenis);
 
   if (!config) {
@@ -23,21 +26,9 @@ export default async function MasterDataDetailPage({
   }
 
   const [records, options] = await Promise.all([
-    listMasterRecords(jenis),
+    listMasterRecords(jenis, search),
     getMasterOptions(),
   ]);
 
-  return (
-    <>
-      <MasterDataManager config={config} records={records} options={options} />
-      {records.length === 0 ? (
-        <div className="mt-6">
-          <EmptyState
-            title="Belum ada data master."
-            description="Tambahkan data pertama melalui tombol Tambah Data."
-          />
-        </div>
-      ) : null}
-    </>
-  );
+  return <MasterDataManager config={config} records={records} options={options} search={search} />;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Edit3, Plus, Trash2, X } from "lucide-react";
+import { Edit3, Plus, Search, Trash2, X } from "lucide-react";
 
 import {
   createMasterDataAction,
@@ -18,6 +18,7 @@ import type {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -295,10 +296,12 @@ export function MasterDataManager({
   config,
   records,
   options,
+  search = "",
 }: {
   config: MasterConfig;
   records: MasterRecord[];
   options: MasterOptionMap;
+  search?: string;
 }) {
   const tableFields = config.fields.filter((field) => field.table);
 
@@ -316,70 +319,83 @@ export function MasterDataManager({
         <CreateModal config={config} options={options} />
       </div>
 
-      <div className="hidden overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-sm lg:block">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-emerald-50/80 hover:bg-emerald-50/80">
-              {tableFields.map((field) => (
-                <TableHead key={field.name}>{field.label}</TableHead>
-              ))}
-              <TableHead className="text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {records.map((record) => (
-              <TableRow key={record.id}>
-                {tableFields.map((field) => (
-                  <TableCell key={field.name}>
-                    {formatValue(field, record[field.name], options)}
-                  </TableCell>
-                ))}
-                <TableCell>
-                  <div className="flex justify-end gap-2">
-                    <EditModal config={config} record={record} options={options} />
-                    <DeleteButton config={config} record={record} />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <Card className="rounded-[1.75rem]">
+        <CardContent className="p-5">
+          <form method="get" className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div className="space-y-2 lg:max-w-3xl">
+              <Label htmlFor="q">Cari Data</Label>
+              <Input
+                id="q"
+                name="q"
+                defaultValue={search}
+                placeholder={`Cari ${config.title.toLowerCase()}...`}
+                className="h-12"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[auto_auto]">
+              <Button type="submit" className="h-12 w-full px-6 sm:w-auto">
+                <Search className="h-4 w-4" />
+                Cari
+              </Button>
+              {search ? (
+                <a
+                  href={`/admin/master-data/${config.slug}`}
+                  className="inline-flex h-12 items-center justify-center rounded-2xl border border-emerald-100 bg-white px-6 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-700"
+                >
+                  Reset
+                </a>
+              ) : null}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-4 lg:hidden">
-        {records.map((record) => (
-          <Card key={record.id}>
-            <CardContent className="p-5">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase text-emerald-700">
-                    {config.title}
-                  </p>
-                  <p className="mt-1 text-lg font-extrabold text-slate-950">
-                    {record[config.codeField] ?? `ID ${record.id}`}
-                  </p>
-                </div>
-              </div>
-              <div className="grid gap-3 text-sm">
-                {tableFields.slice(0, 5).map((field) => (
-                  <div key={field.name}>
-                    <p className="text-xs font-semibold uppercase text-slate-400">
-                      {field.label}
-                    </p>
-                    <div className="mt-1 font-semibold text-slate-700">
-                      {formatValue(field, record[field.name], options)}
-                    </div>
-                  </div>
+      {records.length === 0 ? (
+        <EmptyState
+          title={search ? "Data tidak ditemukan." : "Belum ada data master."}
+          description={
+            search
+              ? "Coba gunakan kata kunci lain atau reset pencarian."
+              : "Tambahkan data pertama melalui tombol Tambah Data."
+          }
+        />
+      ) : null}
+
+      {records.length > 0 ? (
+        <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-emerald-50/80 hover:bg-emerald-50/80">
+                {tableFields.map((field) => (
+                  <TableHead key={field.name} className="min-w-[150px] whitespace-nowrap">
+                    {field.label}
+                  </TableHead>
                 ))}
-              </div>
-              <div className="mt-5 flex gap-2">
-                <EditModal config={config} record={record} options={options} />
-                <DeleteButton config={config} record={record} />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <TableHead className="sticky right-0 min-w-[160px] bg-emerald-50/95 text-right">
+                  Aksi
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map((record) => (
+                <TableRow key={record.id}>
+                  {tableFields.map((field) => (
+                    <TableCell key={field.name} className="min-w-[150px] whitespace-nowrap">
+                      {formatValue(field, record[field.name], options)}
+                    </TableCell>
+                  ))}
+                  <TableCell className="sticky right-0 bg-white">
+                    <div className="flex justify-end gap-2">
+                      <EditModal config={config} record={record} options={options} />
+                      <DeleteButton config={config} record={record} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,7 +1,32 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import bcrypt from "bcryptjs";
 import postgres from "postgres";
+
+function loadEnvFile(fileName: string) {
+  const filePath = join(process.cwd(), fileName);
+  if (!existsSync(filePath)) return;
+
+  const lines = readFileSync(filePath, "utf8").split(/\r?\n/);
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith("#")) continue;
+
+    const separatorIndex = trimmedLine.indexOf("=");
+    if (separatorIndex === -1) continue;
+
+    const key = trimmedLine.slice(0, separatorIndex).trim();
+    const rawValue = trimmedLine.slice(separatorIndex + 1).trim();
+    const value = rawValue.replace(/^["']|["']$/g, "");
+
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+}
+
+loadEnvFile(".env.local");
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -18,31 +43,31 @@ const sql = postgres(connectionString, {
 const users = [
   {
     name: "Admin Maidev",
-    email: "admin@cargoku.test",
+    email: "admin@maidev.test",
     phone: "+62 812-0000-0001",
     role: "admin",
   },
   {
     name: "Kurir Satu",
-    email: "kurir@cargoku.test",
+    email: "kurir@maidev.test",
     phone: "+62 812-0000-0002",
     role: "courier",
   },
   {
     name: "Kurir Dua",
-    email: "kurir2@cargoku.test",
+    email: "kurir2@maidev.test",
     phone: "+62 812-0000-0003",
     role: "courier",
   },
   {
     name: "Customer Satu",
-    email: "customer@cargoku.test",
+    email: "customer@maidev.test",
     phone: "+62 812-0000-0004",
     role: "customer",
   },
   {
     name: "Customer Dua",
-    email: "customer2@cargoku.test",
+    email: "customer2@maidev.test",
     phone: "+62 812-0000-0005",
     role: "customer",
   },
@@ -79,7 +104,7 @@ async function main() {
   }
 
   const [admin] = await sql<{ id: number }[]>`
-    SELECT id FROM users WHERE email = 'admin@cargoku.test' LIMIT 1
+    SELECT id FROM users WHERE email = 'admin@maidev.test' LIMIT 1
   `;
   const courierRows = await sql<{ id: number }[]>`
     SELECT id FROM users WHERE role = 'courier' ORDER BY id ASC

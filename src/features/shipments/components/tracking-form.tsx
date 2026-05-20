@@ -13,9 +13,9 @@ export function TrackingForm({
   action?: string;
 }) {
   return (
-    <Card>
-      <CardContent className="p-5">
-        <form className="grid gap-3 md:grid-cols-[1fr_auto]" action={action}>
+    <Card className="rounded-[1.75rem]">
+      <CardContent className="p-4 sm:p-5">
+        <form className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end" action={action}>
           <div className="space-y-2">
             <Label htmlFor="trackingNumber">Nomor Resi</Label>
             <Input
@@ -23,14 +23,13 @@ export function TrackingForm({
               name="resi"
               defaultValue={defaultValue}
               placeholder="Contoh: CKL-2026-0128"
+              className="h-12"
             />
           </div>
-          <div className="flex items-end">
-            <Button type="submit" className="w-full md:w-auto">
-              <Search className="h-4 w-4" />
-              Lacak
-            </Button>
-          </div>
+          <Button type="submit" className="h-12 w-full px-6 md:w-auto">
+            <Search className="h-4 w-4" />
+            Lacak
+          </Button>
         </form>
       </CardContent>
     </Card>

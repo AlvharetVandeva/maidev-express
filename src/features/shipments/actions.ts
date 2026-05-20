@@ -93,6 +93,18 @@ export async function updateShipmentStatusAction(
   revalidatePath("/customer/shipments");
 }
 
+export async function updateShipmentStatusFormAction(
+  shipmentId: number,
+  formData: FormData,
+) {
+  const status = String(formData.get("status") ?? "");
+  const note = String(formData.get("note") ?? "Status diperbarui admin");
+  const locationValue = formData.get("location");
+  const location = locationValue ? String(locationValue) : undefined;
+
+  await updateShipmentStatusAction(shipmentId, status, note, location);
+}
+
 export async function trackShipmentAction(
   _prevState: ActionState,
   formData: FormData,

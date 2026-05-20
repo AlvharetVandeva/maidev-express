@@ -1,7 +1,6 @@
 import { AlertTriangle, CheckCircle2, Package, Truck } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent } from "@/components/ui/card";
 import { RecentActivityCard } from "@/features/dashboard/components/recent-activity-card";
 import { ShipmentChart } from "@/features/dashboard/components/shipment-chart";
 import { StatCard } from "@/features/dashboard/components/stat-card";
@@ -28,15 +27,6 @@ export default async function AdminDashboardPage() {
         <ShipmentChart data={chartData} />
         <RecentActivityCard activities={activities} />
       </div>
-      {/* <Card className="mt-6 bg-emerald-500 text-white">
-        <CardContent className="p-6">
-          <p className="text-2xl font-extrabold">Kirim barangmu dengan aman & tepat waktu</p>
-          <p className="mt-2 max-w-2xl text-emerald-50">
-            Gunakan dashboard ini untuk menjaga operasional pengiriman tetap ringan,
-            cepat, dan mudah dipantau.
-          </p>
-        </CardContent>
-      </Card> */}
     </>
   );
 }

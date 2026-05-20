@@ -16,20 +16,16 @@ import { initialActionState } from "@/lib/utils";
 export function ShipmentForm({
   couriers,
   customers,
+  variant = "card",
 }: {
   couriers: User[];
   customers: User[];
+  variant?: "card" | "plain";
 }) {
   const [state, formAction, pending] = useActionState(createShipmentAction, initialActionState);
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Tambah Pengiriman</CardTitle>
-        <CardDescription>Input paket baru dan assign kurir jika sudah tersedia.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="grid gap-4 md:grid-cols-2">
+  const form = (
+    <form action={formAction} className="grid gap-4 md:grid-cols-2">
           {state.message ? (
             <Alert
               className={
@@ -100,7 +96,21 @@ export function ShipmentForm({
               {pending ? "Menyimpan..." : "Tambah Pengiriman"}
             </Button>
           </div>
-        </form>
+    </form>
+  );
+
+  if (variant === "plain") {
+    return form;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Tambah Pengiriman</CardTitle>
+        <CardDescription>Input paket baru dan assign kurir jika sudah tersedia.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {form}
       </CardContent>
     </Card>
   );

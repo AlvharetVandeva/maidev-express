@@ -15,10 +15,10 @@ import { formatDate } from "@/lib/utils";
 
 export function UserTable({ users }: { users: User[] }) {
   return (
-    <div className="rounded-3xl border border-emerald-100 bg-white">
+    <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-emerald-50/80 hover:bg-emerald-50/80">
             <TableHead>Nama</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Phone</TableHead>

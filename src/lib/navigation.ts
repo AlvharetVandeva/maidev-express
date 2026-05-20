@@ -1,5 +1,7 @@
 import {
   ClipboardList,
+  ChevronDown,
+  Database,
   Home,
   Package,
   Search,
@@ -8,10 +10,30 @@ import {
 } from "lucide-react";
 
 import type { UserRole } from "@/lib/roles";
+import { masterDataConfigs } from "@/features/master-data/config";
 
-export const navigationByRole = {
+export type NavigationItem = {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children?: readonly NavigationItem[];
+};
+
+const masterDataNavigation: NavigationItem[] = masterDataConfigs.map((config) => ({
+  label: config.title.replace("Data ", ""),
+  href: `/admin/master-data/${config.slug}`,
+  icon: Database,
+}));
+
+export const navigationByRole: Record<UserRole, readonly NavigationItem[]> = {
   admin: [
     { label: "Dashboard", href: "/admin/dashboard", icon: Home },
+    {
+      label: "Data Master",
+      href: "/admin/master-data/kota",
+      icon: Database,
+      children: masterDataNavigation,
+    },
     { label: "Pengiriman", href: "/admin/shipments", icon: Package },
     { label: "Users", href: "/admin/users", icon: Users },
     { label: "Tracking", href: "/tracking", icon: Search },
@@ -29,12 +51,8 @@ export const navigationByRole = {
     { label: "Tracking", href: "/customer/tracking", icon: Search },
     { label: "Profile", href: "/customer/profile", icon: User },
   ],
-} as const satisfies Record<UserRole, readonly NavigationItem[]>;
-
-export type NavigationItem = {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
 };
+
+export const ChevronDownIcon = ChevronDown;
 
 export const bottomNavigationLabels = ["Dashboard", "Tracking", "Profile"];

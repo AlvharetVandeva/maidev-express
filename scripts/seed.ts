@@ -113,6 +113,184 @@ async function main() {
     SELECT id FROM users WHERE role = 'customer' ORDER BY id ASC
   `;
 
+  const kotaRows = await Promise.all(
+    [
+      ["KT-JKT", "Jakarta", "DKI Jakarta", "10110"],
+      ["KT-SMG", "Semarang", "Jawa Tengah", "50111"],
+      ["KT-SLO", "Solo", "Jawa Tengah", "57111"],
+      ["KT-YGY", "Yogyakarta", "DI Yogyakarta", "55111"],
+      ["KT-BDG", "Bandung", "Jawa Barat", "40111"],
+    ].map(([kode, nama, provinsi, kodePos]) => sql<{ id: number }[]>`
+      INSERT INTO kota (kode_kota, nama_kota, provinsi, kode_pos)
+      VALUES (${kode}, ${nama}, ${provinsi}, ${kodePos})
+      ON CONFLICT (kode_kota)
+      DO UPDATE SET
+        nama_kota = EXCLUDED.nama_kota,
+        provinsi = EXCLUDED.provinsi,
+        kode_pos = EXCLUDED.kode_pos,
+        aktif = TRUE,
+        diperbarui_pada = CURRENT_TIMESTAMP
+      RETURNING id
+    `.then((rows) => rows[0])),
+  );
+
+  const jenisRows = await Promise.all(
+    [
+      ["JNS-REG", "Reguler", "Pengiriman standar antar kota", 3],
+      ["JNS-EXP", "Express", "Pengiriman prioritas lebih cepat", 1],
+      ["JNS-CGO", "Cargo Besar", "Layanan barang besar dan berat", 5],
+    ].map(([kode, nama, deskripsi, estimasi]) => sql<{ id: number }[]>`
+      INSERT INTO jenis_pengiriman (kode_jenis, nama_jenis, deskripsi, estimasi_hari)
+      VALUES (${kode}, ${nama}, ${deskripsi}, ${estimasi})
+      ON CONFLICT (kode_jenis)
+      DO UPDATE SET
+        nama_jenis = EXCLUDED.nama_jenis,
+        deskripsi = EXCLUDED.deskripsi,
+        estimasi_hari = EXCLUDED.estimasi_hari,
+        aktif = TRUE,
+        diperbarui_pada = CURRENT_TIMESTAMP
+      RETURNING id
+    `.then((rows) => rows[0])),
+  );
+
+  const kendaraanRows = await Promise.all(
+    [
+      ["KDR-001", "B 1234 MEX", "Truk Box", "Mitsubishi", "Colt Diesel", 2500, 18],
+      ["KDR-002", "B 5678 MEX", "Pickup", "Daihatsu", "Gran Max", 900, 6],
+    ].map(([kode, polisi, jenis, merek, model, kg, volume]) => sql<{ id: number }[]>`
+      INSERT INTO kendaraan (
+        kode_kendaraan,
+        no_polisi,
+        jenis_kendaraan,
+        merek,
+        model,
+        kapasitas_kg,
+        kapasitas_volume
+      )
+      VALUES (${kode}, ${polisi}, ${jenis}, ${merek}, ${model}, ${kg}, ${volume})
+      ON CONFLICT (kode_kendaraan)
+      DO UPDATE SET
+        no_polisi = EXCLUDED.no_polisi,
+        jenis_kendaraan = EXCLUDED.jenis_kendaraan,
+        merek = EXCLUDED.merek,
+        model = EXCLUDED.model,
+        kapasitas_kg = EXCLUDED.kapasitas_kg,
+        kapasitas_volume = EXCLUDED.kapasitas_volume,
+        aktif = TRUE,
+        diperbarui_pada = CURRENT_TIMESTAMP
+      RETURNING id
+    `.then((rows) => rows[0])),
+  );
+
+  const barangRows = await Promise.all(
+    [
+      ["BRG-001", "Paket Fashion", "Retail", "Pakaian dan aksesoris", 2, false],
+      ["BRG-002", "Produk Keramik", "Pecah Belah", "Barang mudah pecah", 5, true],
+      ["BRG-003", "Bahan Makanan Kering", "F&B", "Produk UMKM tahan lama", 8, false],
+    ].map(([kode, nama, kategori, deskripsi, berat, pecah]) => sql<{ id: number }[]>`
+      INSERT INTO barang (
+        kode_barang,
+        nama_barang,
+        kategori,
+        deskripsi,
+        berat_default_kg,
+        mudah_pecah
+      )
+      VALUES (${kode}, ${nama}, ${kategori}, ${deskripsi}, ${berat}, ${pecah})
+      ON CONFLICT (kode_barang)
+      DO UPDATE SET
+        nama_barang = EXCLUDED.nama_barang,
+        kategori = EXCLUDED.kategori,
+        deskripsi = EXCLUDED.deskripsi,
+        berat_default_kg = EXCLUDED.berat_default_kg,
+        mudah_pecah = EXCLUDED.mudah_pecah,
+        aktif = TRUE,
+        diperbarui_pada = CURRENT_TIMESTAMP
+      RETURNING id
+    `.then((rows) => rows[0])),
+  );
+
+  const pelangganRows = await Promise.all(
+    [
+      ["PLG-001", customerRows[0]?.id ?? null, "Toko Sinar Jaya", "Budi Santoso"],
+      ["PLG-002", customerRows[1]?.id ?? null, "UMKM Makmur", "Siti Aminah"],
+    ].map(([kode, penggunaId, perusahaan, kontak], index) => sql<{ id: number }[]>`
+      INSERT INTO pelanggan (
+        pengguna_id,
+        kota_id,
+        kode_pelanggan,
+        nama_perusahaan,
+        nama_kontak,
+        telepon,
+        email,
+        alamat
+      )
+      VALUES (
+        ${penggunaId},
+        ${kotaRows[index + 1]?.id ?? kotaRows[0]?.id},
+        ${kode},
+        ${perusahaan},
+        ${kontak},
+        '+62 812-3333-0000',
+        ${index === 0 ? "customer@cargoku.test" : "customer2@cargoku.test"},
+        ${`Alamat ${perusahaan}`}
+      )
+      ON CONFLICT (kode_pelanggan)
+      DO UPDATE SET
+        pengguna_id = EXCLUDED.pengguna_id,
+        kota_id = EXCLUDED.kota_id,
+        nama_perusahaan = EXCLUDED.nama_perusahaan,
+        nama_kontak = EXCLUDED.nama_kontak,
+        telepon = EXCLUDED.telepon,
+        email = EXCLUDED.email,
+        alamat = EXCLUDED.alamat,
+        aktif = TRUE,
+        diperbarui_pada = CURRENT_TIMESTAMP
+      RETURNING id
+    `.then((rows) => rows[0])),
+  );
+
+  const kurirMasterRows = await Promise.all(
+    [
+      ["KUR-001", courierRows[0]?.id ?? null, "Kurir Satu", "SIM-A-001"],
+      ["KUR-002", courierRows[1]?.id ?? null, "Kurir Dua", "SIM-A-002"],
+    ].map(([kode, penggunaId, nama, sim]) => sql<{ id: number }[]>`
+      INSERT INTO kurir (pengguna_id, kode_kurir, nama_kurir, telepon, no_sim, alamat)
+      VALUES (${penggunaId}, ${kode}, ${nama}, '+62 812-4444-0000', ${sim}, 'Jakarta')
+      ON CONFLICT (kode_kurir)
+      DO UPDATE SET
+        pengguna_id = EXCLUDED.pengguna_id,
+        nama_kurir = EXCLUDED.nama_kurir,
+        telepon = EXCLUDED.telepon,
+        no_sim = EXCLUDED.no_sim,
+        alamat = EXCLUDED.alamat,
+        aktif = TRUE,
+        diperbarui_pada = CURRENT_TIMESTAMP
+      RETURNING id
+    `.then((rows) => rows[0])),
+  );
+
+  await Promise.all(
+    kotaRows.slice(1, 4).map((tujuan) => sql`
+      INSERT INTO tarif_pengiriman (
+        kota_asal_id,
+        kota_tujuan_id,
+        jenis_pengiriman_id,
+        harga_dasar,
+        harga_per_kg,
+        berat_minimum_kg
+      )
+      VALUES (${kotaRows[0].id}, ${tujuan.id}, ${jenisRows[0].id}, 25000, 3500, 1)
+      ON CONFLICT (kota_asal_id, kota_tujuan_id, jenis_pengiriman_id)
+      DO UPDATE SET
+        harga_dasar = EXCLUDED.harga_dasar,
+        harga_per_kg = EXCLUDED.harga_per_kg,
+        berat_minimum_kg = EXCLUDED.berat_minimum_kg,
+        aktif = TRUE,
+        diperbarui_pada = CURRENT_TIMESTAMP
+    `),
+  );
+
   for (const [index, shipment] of shipments.entries()) {
     const [trackingNumber, senderName, city, status] = shipment;
     const courier = courierRows[index % courierRows.length]?.id ?? null;
@@ -171,6 +349,111 @@ async function main() {
       `;
     }
   }
+
+  const [pengirimanRow] = await sql<{ id: number }[]>`
+    INSERT INTO pengiriman (
+      nomor_resi,
+      pelanggan_id,
+      kurir_id,
+      kendaraan_id,
+      jenis_pengiriman_id,
+      kota_asal_id,
+      kota_tujuan_id,
+      nama_pengirim,
+      telepon_pengirim,
+      nama_penerima,
+      telepon_penerima,
+      alamat_pickup,
+      alamat_tujuan,
+      status,
+      dibuat_oleh
+    )
+    VALUES (
+      'MEX-2026-0001',
+      ${pelangganRows[0].id},
+      ${kurirMasterRows[0].id},
+      ${kendaraanRows[0].id},
+      ${jenisRows[0].id},
+      ${kotaRows[0].id},
+      ${kotaRows[1].id},
+      'Toko Sinar Jaya',
+      '+62 812-1111-0000',
+      'Penerima Master',
+      '+62 812-2222-0000',
+      'Gudang Jakarta',
+      'Jl. Pemuda No. 10, Semarang',
+      'dalam_perjalanan',
+      ${admin.id}
+    )
+    ON CONFLICT (nomor_resi)
+    DO UPDATE SET
+      pelanggan_id = EXCLUDED.pelanggan_id,
+      kurir_id = EXCLUDED.kurir_id,
+      kendaraan_id = EXCLUDED.kendaraan_id,
+      jenis_pengiriman_id = EXCLUDED.jenis_pengiriman_id,
+      kota_asal_id = EXCLUDED.kota_asal_id,
+      kota_tujuan_id = EXCLUDED.kota_tujuan_id,
+      status = EXCLUDED.status,
+      diperbarui_pada = CURRENT_TIMESTAMP
+    RETURNING id
+  `;
+
+  await sql`
+    INSERT INTO detail_pengiriman (
+      pengiriman_id,
+      total_berat_kg,
+      total_volume,
+      jarak_km,
+      biaya_pengiriman,
+      biaya_asuransi,
+      total_biaya,
+      tanggal_pickup,
+      estimasi_tiba,
+      status_pembayaran
+    )
+    VALUES (${pengirimanRow.id}, 12, 1.5, 450, 67000, 5000, 72000, CURRENT_DATE, CURRENT_DATE + 3, 'belum_dibayar')
+    ON CONFLICT (pengiriman_id)
+    DO UPDATE SET
+      total_berat_kg = EXCLUDED.total_berat_kg,
+      total_volume = EXCLUDED.total_volume,
+      jarak_km = EXCLUDED.jarak_km,
+      biaya_pengiriman = EXCLUDED.biaya_pengiriman,
+      biaya_asuransi = EXCLUDED.biaya_asuransi,
+      total_biaya = EXCLUDED.total_biaya,
+      tanggal_pickup = EXCLUDED.tanggal_pickup,
+      estimasi_tiba = EXCLUDED.estimasi_tiba,
+      status_pembayaran = EXCLUDED.status_pembayaran,
+      diperbarui_pada = CURRENT_TIMESTAMP
+  `;
+
+  await Promise.all(
+    barangRows.slice(0, 2).map((barang, index) => sql`
+      INSERT INTO pengiriman_barang (
+        pengiriman_id,
+        barang_id,
+        jumlah,
+        berat_kg,
+        panjang_cm,
+        lebar_cm,
+        tinggi_cm,
+        catatan
+      )
+      VALUES (${pengirimanRow.id}, ${barang.id}, ${index + 1}, ${index === 0 ? 4 : 8}, 40, 30, 25, 'Sample barang transaksi')
+      ON CONFLICT (pengiriman_id, barang_id)
+      DO UPDATE SET
+        jumlah = EXCLUDED.jumlah,
+        berat_kg = EXCLUDED.berat_kg,
+        panjang_cm = EXCLUDED.panjang_cm,
+        lebar_cm = EXCLUDED.lebar_cm,
+        tinggi_cm = EXCLUDED.tinggi_cm,
+        catatan = EXCLUDED.catatan
+    `),
+  );
+
+  await sql`
+    INSERT INTO log_pengiriman (pengiriman_id, status, catatan, lokasi, diperbarui_oleh)
+    VALUES (${pengirimanRow.id}, 'dalam_perjalanan', 'Sample transaksi master dibuat', 'Semarang', ${admin.id})
+  `;
 }
 
 main()

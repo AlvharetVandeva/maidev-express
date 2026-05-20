@@ -18,7 +18,7 @@ export default async function AdminDashboardPage() {
         title="Dashboard Admin"
         description="Pantau seluruh pengiriman, status paket, dan aktivitas terbaru."
       />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
         <StatCard title="Total Paket" value={stats.total} icon={Package} />
         <StatCard title="Sedang Dikirim" value={stats.active} icon={Truck} tone="blue" />
         <StatCard title="Selesai" value={stats.completed} icon={CheckCircle2} />
@@ -28,7 +28,7 @@ export default async function AdminDashboardPage() {
         <ShipmentChart data={chartData} />
         <RecentActivityCard activities={activities} />
       </div>
-      <Card className="mt-6 bg-emerald-500 text-white">
+      {/* <Card className="mt-6 bg-emerald-500 text-white">
         <CardContent className="p-6">
           <p className="text-2xl font-extrabold">Kirim barangmu dengan aman & tepat waktu</p>
           <p className="mt-2 max-w-2xl text-emerald-50">
@@ -36,7 +36,7 @@ export default async function AdminDashboardPage() {
             cepat, dan mudah dipantau.
           </p>
         </CardContent>
-      </Card>
+      </Card> */}
     </>
   );
 }

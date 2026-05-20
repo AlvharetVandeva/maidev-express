@@ -12,10 +12,22 @@ type StatCardProps = {
 };
 
 const tones = {
-  green: "bg-emerald-100 text-emerald-700",
-  blue: "bg-sky-100 text-sky-700",
-  amber: "bg-amber-100 text-amber-700",
-  red: "bg-red-100 text-red-700",
+  green: {
+    icon: "bg-emerald-100 text-emerald-700",
+    accent: "bg-emerald-500",
+  },
+  blue: {
+    icon: "bg-sky-100 text-sky-700",
+    accent: "bg-sky-500",
+  },
+  amber: {
+    icon: "bg-amber-100 text-amber-700",
+    accent: "bg-amber-500",
+  },
+  red: {
+    icon: "bg-red-100 text-red-700",
+    accent: "bg-red-500",
+  },
 };
 
 export function StatCard({
@@ -25,19 +37,29 @@ export function StatCard({
   icon: Icon,
   tone = "green",
 }: StatCardProps) {
+  const toneClass = tones[tone];
+
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-slate-500">{title}</p>
-            <p className="mt-2 text-3xl font-extrabold text-slate-900">{value}</p>
-          </div>
-          <div className={cn("flex h-12 w-12 items-center justify-center rounded-3xl", tones[tone])}>
-            <Icon className="h-6 w-6" aria-hidden="true" />
+    <Card className="relative min-h-[136px] overflow-hidden border-emerald-100/80 shadow-[0_10px_28px_rgba(15,118,110,0.08)]">
+      <div className={cn("absolute inset-x-0 top-0 h-1", toneClass.accent)} />
+      <CardContent className="flex h-full min-h-[136px] items-center justify-between gap-5 p-6">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold leading-none text-slate-500">{title}</p>
+          <div className="mt-5 flex items-end gap-2">
+            <p className="text-4xl font-extrabold leading-none text-slate-950">{value}</p>
+            {description ? (
+              <p className="pb-1 text-xs font-medium text-slate-400">{description}</p>
+            ) : null}
           </div>
         </div>
-        {description ? <p className="mt-3 text-sm text-slate-500">{description}</p> : null}
+        <div
+          className={cn(
+            "flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.35rem]",
+            toneClass.icon,
+          )}
+        >
+          <Icon className="h-7 w-7" aria-hidden="true" />
+        </div>
       </CardContent>
     </Card>
   );

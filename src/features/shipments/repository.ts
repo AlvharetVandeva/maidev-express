@@ -36,6 +36,16 @@ type ShipmentLogRow = {
   created_at: string;
 };
 
+export type ShipmentListParams = ShipmentFilters & {
+  page?: number;
+  pageSize?: number;
+};
+
+export type ShipmentListResult = {
+  shipments: Shipment[];
+  total: number;
+};
+
 function mapShipment(row: ShipmentRow): Shipment {
   return {
     id: row.id,
@@ -76,8 +86,13 @@ function generateTrackingNumber() {
   return `CKL-${y}-${suffix}`;
 }
 
-export async function getAllShipments(filters: ShipmentFilters = {}) {
+export async function getAllShipments(
+  filters: ShipmentListParams = {},
+): Promise<ShipmentListResult> {
   const conditions = [];
+  const page = Math.max(1, filters.page ?? 1);
+  const pageSize = Math.min(50, Math.max(5, filters.pageSize ?? 10));
+  const offset = (page - 1) * pageSize;
 
   if (filters.status && filters.status !== "all") {
     conditions.push(sql`status = ${filters.status}`);
@@ -98,14 +113,26 @@ export async function getAllShipments(filters: ShipmentFilters = {}) {
       ? conditions.reduce((left, right) => sql`${left} AND ${right}`)
       : sql`TRUE`;
 
-  const rows = await sql<ShipmentRow[]>`
-    SELECT *
-    FROM shipments
-    WHERE ${where}
-    ORDER BY created_at DESC
-  `;
+  const [rows, counts] = await Promise.all([
+    sql<ShipmentRow[]>`
+      SELECT *
+      FROM shipments
+      WHERE ${where}
+      ORDER BY created_at DESC
+      LIMIT ${pageSize}
+      OFFSET ${offset}
+    `,
+    sql<{ total: number }[]>`
+      SELECT COUNT(*)::int AS total
+      FROM shipments
+      WHERE ${where}
+    `,
+  ]);
 
-  return rows.map(mapShipment);
+  return {
+    shipments: rows.map(mapShipment),
+    total: counts[0]?.total ?? 0,
+  };
 }
 
 export async function getShipmentById(id: number) {

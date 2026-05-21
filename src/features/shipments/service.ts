@@ -11,10 +11,11 @@ import {
   updateShipmentStatus,
 } from "@/features/shipments/repository";
 import type { CreateShipmentInput } from "@/features/shipments/schema";
-import type { ShipmentFilters, ShipmentStatus } from "@/features/shipments/types";
+import type { ShipmentStatus } from "@/features/shipments/types";
 import type { UserRole } from "@/lib/roles";
+import type { ShipmentListParams } from "@/features/shipments/repository";
 
-export async function listAllShipments(filters: ShipmentFilters = {}) {
+export async function listAllShipments(filters: ShipmentListParams = {}) {
   return getAllShipments(filters);
 }
 

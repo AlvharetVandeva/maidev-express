@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useState, useTransition } from "react";
 import {
@@ -34,6 +33,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -329,12 +329,12 @@ function buildMasterDataHref({
 }
 
 function PaginationLink({
-  href,
+  onNavigate,
   disabled,
   children,
   label,
 }: {
-  href: string;
+  onNavigate: () => void;
   disabled?: boolean;
   children: React.ReactNode;
   label: string;
@@ -352,13 +352,14 @@ function PaginationLink({
   }
 
   return (
-    <Link
-      href={href}
+    <button
+      type="button"
+      onClick={onNavigate}
       aria-label={label}
       className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-100 bg-white text-slate-600 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-700"
     >
       {children}
-    </Link>
+    </button>
   );
 }
 
@@ -369,6 +370,7 @@ function MasterDataPagination({
   pageSize,
   totalRecords,
   visibleRecords,
+  onNavigate,
 }: {
   config: MasterConfig;
   search: string;
@@ -376,6 +378,7 @@ function MasterDataPagination({
   pageSize: number;
   totalRecords: number;
   visibleRecords: number;
+  onNavigate: (href: string) => void;
 }) {
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -399,53 +402,136 @@ function MasterDataPagination({
         </span>
         <div className="flex items-center gap-2">
           <PaginationLink
-            href={buildMasterDataHref({
-              slug: config.slug,
-              search,
-              page: 1,
-              pageSize,
-            })}
+            onNavigate={() =>
+              onNavigate(
+                buildMasterDataHref({
+                  slug: config.slug,
+                  search,
+                  page: 1,
+                  pageSize,
+                }),
+              )
+            }
             disabled={!hasPrevious}
             label="Halaman pertama"
           >
             <ChevronsLeft className="h-4 w-4" />
           </PaginationLink>
           <PaginationLink
-            href={buildMasterDataHref({
-              slug: config.slug,
-              search,
-              page: Math.max(1, currentPage - 1),
-              pageSize,
-            })}
+            onNavigate={() =>
+              onNavigate(
+                buildMasterDataHref({
+                  slug: config.slug,
+                  search,
+                  page: Math.max(1, currentPage - 1),
+                  pageSize,
+                }),
+              )
+            }
             disabled={!hasPrevious}
             label="Halaman sebelumnya"
           >
             <ChevronLeft className="h-4 w-4" />
           </PaginationLink>
           <PaginationLink
-            href={buildMasterDataHref({
-              slug: config.slug,
-              search,
-              page: Math.min(totalPages, currentPage + 1),
-              pageSize,
-            })}
+            onNavigate={() =>
+              onNavigate(
+                buildMasterDataHref({
+                  slug: config.slug,
+                  search,
+                  page: Math.min(totalPages, currentPage + 1),
+                  pageSize,
+                }),
+              )
+            }
             disabled={!hasNext}
             label="Halaman berikutnya"
           >
             <ChevronRight className="h-4 w-4" />
           </PaginationLink>
           <PaginationLink
-            href={buildMasterDataHref({
-              slug: config.slug,
-              search,
-              page: totalPages,
-              pageSize,
-            })}
+            onNavigate={() =>
+              onNavigate(
+                buildMasterDataHref({
+                  slug: config.slug,
+                  search,
+                  page: totalPages,
+                  pageSize,
+                }),
+              )
+            }
             disabled={!hasNext}
             label="Halaman terakhir"
           >
             <ChevronsRight className="h-4 w-4" />
           </PaginationLink>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MasterDataTableSkeleton({
+  config,
+  columnCount,
+  rowCount,
+}: {
+  config: MasterConfig;
+  columnCount: number;
+  rowCount: number;
+}) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-emerald-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-64 max-w-full" />
+        </div>
+        <Skeleton className="h-7 w-24 rounded-full" />
+      </div>
+      <div className="w-full overflow-auto">
+        <div
+          className="grid min-w-[760px] gap-0 bg-emerald-50/80 px-4 py-3"
+          style={{ gridTemplateColumns: `64px repeat(${columnCount}, minmax(150px, 1fr)) 170px` }}
+        >
+          {Array.from({ length: columnCount + 2 }).map((_, index) => (
+            <Skeleton key={`${config.slug}-head-${index}`} className="h-4 w-24" />
+          ))}
+        </div>
+        <div className="min-w-[760px] divide-y divide-emerald-50">
+          {Array.from({ length: rowCount }).map((_, rowIndex) => (
+            <div
+              key={`${config.slug}-row-${rowIndex}`}
+              className="grid items-center gap-4 px-4 py-4"
+              style={{
+                gridTemplateColumns: `64px repeat(${columnCount}, minmax(150px, 1fr)) 170px`,
+              }}
+            >
+              {Array.from({ length: columnCount + 2 }).map((_, columnIndex) => (
+                <Skeleton
+                  key={`${config.slug}-cell-${rowIndex}-${columnIndex}`}
+                  className={
+                    columnIndex === 0
+                      ? "mx-auto h-4 w-6"
+                      : columnIndex === columnCount + 1
+                        ? "ml-auto h-9 w-32"
+                        : "h-4 w-full max-w-[180px]"
+                  }
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-4 border-t border-emerald-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <Skeleton className="h-4 w-56 max-w-full" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-4 w-24" />
+          <div className="flex items-center gap-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={`${config.slug}-pager-${index}`} className="h-10 w-10" />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -491,6 +577,12 @@ export function MasterDataManager({
     });
   }
 
+  function navigateToHref(href: string) {
+    startTableTransition(() => {
+      router.push(href);
+    });
+  }
+
   function handleSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     navigateTable(new FormData(event.currentTarget));
@@ -501,6 +593,12 @@ export function MasterDataManager({
     const form = event.currentTarget.form;
 
     navigateTable(form ? new FormData(form) : new FormData(), nextPageSize);
+  }
+
+  function handleReset() {
+    startTableTransition(() => {
+      router.push(`/admin/master-data/${config.slug}`);
+    });
   }
 
   return (
@@ -560,19 +658,29 @@ export function MasterDataManager({
                 {isTablePending ? "Memuat..." : "Cari"}
               </Button>
               {search ? (
-                <Link
-                  href={`/admin/master-data/${config.slug}`}
+                <button
+                  type="button"
+                  disabled={isTablePending}
+                  onClick={handleReset}
                   className="inline-flex h-12 items-center justify-center rounded-2xl border border-emerald-100 bg-white px-6 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-700"
                 >
                   Reset
-                </Link>
+                </button>
               ) : null}
             </div>
           </form>
         </CardContent>
       </Card>
 
-      {records.length === 0 ? (
+      {isTablePending ? (
+        <MasterDataTableSkeleton
+          config={config}
+          columnCount={tableFields.length}
+          rowCount={Math.min(pageSize, 10)}
+        />
+      ) : null}
+
+      {!isTablePending && records.length === 0 ? (
         <EmptyState
           title={search ? "Data tidak ditemukan." : "Belum ada data master."}
           description={
@@ -583,7 +691,7 @@ export function MasterDataManager({
         />
       ) : null}
 
-      {records.length > 0 ? (
+      {!isTablePending && records.length > 0 ? (
         <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-emerald-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -649,6 +757,7 @@ export function MasterDataManager({
             pageSize={pageSize}
             totalRecords={totalRecords}
             visibleRecords={records.length}
+            onNavigate={navigateToHref}
           />
         </div>
       ) : null}

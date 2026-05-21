@@ -2,9 +2,10 @@ import { hashPassword } from "@/lib/password";
 import { createUser, findUserByEmail, getUsers, getUsersByRole, updateUserStatus } from "@/features/users/repository";
 import type { CreateUserInput } from "@/features/users/schema";
 import type { UserRole } from "@/lib/roles";
+import type { UserListParams } from "@/features/users/repository";
 
-export async function listUsers() {
-  return getUsers();
+export async function listUsers(params: UserListParams = {}) {
+  return getUsers(params);
 }
 
 export async function listCouriers() {

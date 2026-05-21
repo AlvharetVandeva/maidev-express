@@ -15,6 +15,18 @@ type UserRow = {
   updated_at: string;
 };
 
+export type UserListParams = {
+  search?: string;
+  role?: UserRole | "all";
+  page?: number;
+  pageSize?: number;
+};
+
+export type UserListResult = {
+  users: User[];
+  total: number;
+};
+
 function mapUser(row: UserRow): User {
   if (!isUserRole(row.role)) {
     throw new Error(`Invalid user role: ${row.role}`);
@@ -62,14 +74,51 @@ export async function findUserById(id: number) {
   return rows[0] ? mapUser(rows[0]) : null;
 }
 
-export async function getUsers() {
-  const rows = await sql<UserRow[]>`
-    SELECT id, name, email, phone, role, avatar_url, is_active, created_at, updated_at
-    FROM users
-    ORDER BY created_at DESC
-  `;
+export async function getUsers(params: UserListParams = {}): Promise<UserListResult> {
+  const conditions = [];
+  const search = params.search?.trim();
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(50, Math.max(5, params.pageSize ?? 10));
+  const offset = (page - 1) * pageSize;
 
-  return rows.map(mapUser);
+  if (params.role && params.role !== "all") {
+    conditions.push(sql`role = ${params.role}`);
+  }
+
+  if (search) {
+    const keyword = `%${search}%`;
+    conditions.push(sql`(
+      name ILIKE ${keyword}
+      OR email ILIKE ${keyword}
+      OR phone ILIKE ${keyword}
+    )`);
+  }
+
+  const where =
+    conditions.length > 0
+      ? conditions.reduce((left, right) => sql`${left} AND ${right}`)
+      : sql`TRUE`;
+
+  const [rows, counts] = await Promise.all([
+    sql<UserRow[]>`
+      SELECT id, name, email, phone, role, avatar_url, is_active, created_at, updated_at
+      FROM users
+      WHERE ${where}
+      ORDER BY created_at DESC
+      LIMIT ${pageSize}
+      OFFSET ${offset}
+    `,
+    sql<{ total: number }[]>`
+      SELECT COUNT(*)::int AS total
+      FROM users
+      WHERE ${where}
+    `,
+  ]);
+
+  return {
+    users: rows.map(mapUser),
+    total: counts[0]?.total ?? 0,
+  };
 }
 
 export async function getUsersByRole(role: UserRole) {

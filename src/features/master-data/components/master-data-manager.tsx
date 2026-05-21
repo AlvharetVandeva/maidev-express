@@ -1,7 +1,19 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Edit3, Plus, Search, Trash2, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useActionState, useState, useTransition } from "react";
+import {
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import {
   createMasterDataAction,
@@ -61,7 +73,12 @@ function formatValue(
   }
 
   const relationValue = getMasterOptionLabel(options, field.relation, value);
-  return relationValue ?? "-";
+  if (relationValue) return relationValue;
+
+  if (typeof value === "string" && value.trim()) return value;
+  if (typeof value === "number") return value.toLocaleString("id-ID");
+
+  return <span className="text-slate-400">-</span>;
 }
 
 function fieldValue(record: MasterRecord | null, field: MasterField) {
@@ -236,7 +253,6 @@ function EditModal({
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
         <Edit3 className="h-4 w-4" />
-        Edit
       </Button>
       {open ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 backdrop-blur-sm sm:items-center sm:p-4">
@@ -286,9 +302,153 @@ function DeleteButton({ config, record }: { config: MasterConfig; record: Master
     >
       <Button type="submit" variant="danger" size="sm">
         <Trash2 className="h-4 w-4" />
-        Hapus
       </Button>
     </form>
+  );
+}
+
+function buildMasterDataHref({
+  slug,
+  search,
+  page,
+  pageSize,
+}: {
+  slug: string;
+  search: string;
+  page: number;
+  pageSize: number;
+}) {
+  const params = new URLSearchParams();
+
+  if (search) params.set("q", search);
+  if (page > 1) params.set("page", String(page));
+  if (pageSize !== 10) params.set("perPage", String(pageSize));
+
+  const query = params.toString();
+  return `/admin/master-data/${slug}${query ? `?${query}` : ""}`;
+}
+
+function PaginationLink({
+  href,
+  disabled,
+  children,
+  label,
+}: {
+  href: string;
+  disabled?: boolean;
+  children: React.ReactNode;
+  label: string;
+}) {
+  if (disabled) {
+    return (
+      <span
+        aria-disabled="true"
+        aria-label={label}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-300"
+      >
+        {children}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-100 bg-white text-slate-600 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-700"
+    >
+      {children}
+    </Link>
+  );
+}
+
+function MasterDataPagination({
+  config,
+  search,
+  page,
+  pageSize,
+  totalRecords,
+  visibleRecords,
+}: {
+  config: MasterConfig;
+  search: string;
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  visibleRecords: number;
+}) {
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endRecord = totalRecords === 0 ? 0 : startRecord + visibleRecords - 1;
+  const hasPrevious = currentPage > 1;
+  const hasNext = currentPage < totalPages;
+
+  return (
+    <div className="flex flex-col gap-4 border-t border-emerald-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-500">
+        Menampilkan{" "}
+        <span className="font-semibold text-slate-700">
+          {startRecord}-{endRecord}
+        </span>{" "}
+        dari <span className="font-semibold text-slate-700">{totalRecords}</span> data
+      </p>
+      <div className="flex items-center justify-between gap-3 sm:justify-end">
+        <span className="text-sm font-semibold text-slate-600">
+          Halaman {currentPage} / {totalPages}
+        </span>
+        <div className="flex items-center gap-2">
+          <PaginationLink
+            href={buildMasterDataHref({
+              slug: config.slug,
+              search,
+              page: 1,
+              pageSize,
+            })}
+            disabled={!hasPrevious}
+            label="Halaman pertama"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </PaginationLink>
+          <PaginationLink
+            href={buildMasterDataHref({
+              slug: config.slug,
+              search,
+              page: Math.max(1, currentPage - 1),
+              pageSize,
+            })}
+            disabled={!hasPrevious}
+            label="Halaman sebelumnya"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </PaginationLink>
+          <PaginationLink
+            href={buildMasterDataHref({
+              slug: config.slug,
+              search,
+              page: Math.min(totalPages, currentPage + 1),
+              pageSize,
+            })}
+            disabled={!hasNext}
+            label="Halaman berikutnya"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </PaginationLink>
+          <PaginationLink
+            href={buildMasterDataHref({
+              slug: config.slug,
+              search,
+              page: totalPages,
+              pageSize,
+            })}
+            disabled={!hasNext}
+            label="Halaman terakhir"
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </PaginationLink>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -297,13 +457,51 @@ export function MasterDataManager({
   records,
   options,
   search = "",
+  page,
+  pageSize,
+  totalRecords,
 }: {
   config: MasterConfig;
   records: MasterRecord[];
   options: MasterOptionMap;
   search?: string;
+  page: number;
+  pageSize: number;
+  totalRecords: number;
 }) {
+  const router = useRouter();
+  const [isTablePending, startTableTransition] = useTransition();
   const tableFields = config.fields.filter((field) => field.table);
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const currentPage = Math.min(page, totalPages);
+
+  function navigateTable(formData: FormData, nextPageSize = pageSize) {
+    const formSearch = formData.get("q");
+    const nextSearch = typeof formSearch === "string" ? formSearch.trim() : search;
+
+    startTableTransition(() => {
+      router.push(
+        buildMasterDataHref({
+          slug: config.slug,
+          search: nextSearch,
+          page: 1,
+          pageSize: nextPageSize,
+        }),
+      );
+    });
+  }
+
+  function handleSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    navigateTable(new FormData(event.currentTarget));
+  }
+
+  function handlePageSizeChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const nextPageSize = Number(event.currentTarget.value) || 10;
+    const form = event.currentTarget.form;
+
+    navigateTable(form ? new FormData(form) : new FormData(), nextPageSize);
+  }
 
   return (
     <div className="space-y-6">
@@ -321,7 +519,11 @@ export function MasterDataManager({
 
       <Card className="rounded-[1.75rem]">
         <CardContent className="p-5">
-          <form method="get" className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+          <form
+            method="get"
+            onSubmit={handleSearchSubmit}
+            className="grid gap-3 lg:grid-cols-[1fr_auto_auto] lg:items-end"
+          >
             <div className="space-y-2 lg:max-w-3xl">
               <Label htmlFor="q">Cari Data</Label>
               <Input
@@ -332,18 +534,38 @@ export function MasterDataManager({
                 className="h-12"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="perPage">Baris</Label>
+              <Select
+                id="perPage"
+                name="perPage"
+                defaultValue={String(pageSize)}
+                disabled={isTablePending}
+                onChange={handlePageSizeChange}
+                className="h-12"
+              >
+                <option value="5">5 / halaman</option>
+                <option value="10">10 / halaman</option>
+                <option value="20">20 / halaman</option>
+                <option value="50">50 / halaman</option>
+              </Select>
+            </div>
             <div className="grid gap-3 sm:grid-cols-[auto_auto]">
-              <Button type="submit" className="h-12 w-full px-6 sm:w-auto">
+              <Button
+                type="submit"
+                disabled={isTablePending}
+                className="h-12 w-full px-6 sm:w-auto"
+              >
                 <Search className="h-4 w-4" />
-                Cari
+                {isTablePending ? "Memuat..." : "Cari"}
               </Button>
               {search ? (
-                <a
+                <Link
                   href={`/admin/master-data/${config.slug}`}
                   className="inline-flex h-12 items-center justify-center rounded-2xl border border-emerald-100 bg-white px-6 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-emerald-50 hover:text-emerald-700"
                 >
                   Reset
-                </a>
+                </Link>
               ) : null}
             </div>
           </form>
@@ -363,37 +585,71 @@ export function MasterDataManager({
 
       {records.length > 0 ? (
         <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-emerald-50/80 hover:bg-emerald-50/80">
-                {tableFields.map((field) => (
-                  <TableHead key={field.name} className="min-w-[150px] whitespace-nowrap">
-                    {field.label}
-                  </TableHead>
-                ))}
-                <TableHead className="sticky right-0 min-w-[160px] bg-emerald-50/95 text-right">
-                  Aksi
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {records.map((record) => (
-                <TableRow key={record.id}>
+          <div className="flex flex-col gap-3 border-b border-emerald-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900">
+                Tabel {config.title}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {search
+                  ? `Hasil pencarian untuk "${search}"`
+                  : "Data terbaru ditampilkan lebih dulu."}
+              </p>
+            </div>
+            <Badge className="w-fit bg-emerald-100 text-emerald-700">
+              {totalRecords.toLocaleString("id-ID")} data
+            </Badge>
+          </div>
+          <div className="[&_table]:min-w-full">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-emerald-50/80 hover:bg-emerald-50/80">
+                  <TableHead className="w-16 whitespace-nowrap text-center">No</TableHead>
                   {tableFields.map((field) => (
-                    <TableCell key={field.name} className="min-w-[150px] whitespace-nowrap">
-                      {formatValue(field, record[field.name], options)}
-                    </TableCell>
+                    <TableHead key={field.name} className="min-w-[150px] whitespace-nowrap">
+                      {field.label}
+                    </TableHead>
                   ))}
-                  <TableCell className="sticky right-0 bg-white">
-                    <div className="flex justify-end gap-2">
-                      <EditModal config={config} record={record} options={options} />
-                      <DeleteButton config={config} record={record} />
-                    </div>
-                  </TableCell>
+                  <TableHead className="sticky right-0 min-w-[170px] bg-emerald-50/95 text-right shadow-[-12px_0_18px_-20px_rgba(15,23,42,0.55)]">
+                    Aksi
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {records.map((record, index) => (
+                  <TableRow key={record.id} className="odd:bg-white even:bg-emerald-50/25">
+                    <TableCell className="w-16 text-center text-sm font-semibold text-slate-400">
+                      {(currentPage - 1) * pageSize + index + 1}
+                    </TableCell>
+                    {tableFields.map((field) => (
+                      <TableCell
+                        key={field.name}
+                        className="min-w-[150px] max-w-[260px] whitespace-nowrap"
+                      >
+                        <span className="block truncate">
+                          {formatValue(field, record[field.name], options)}
+                        </span>
+                      </TableCell>
+                    ))}
+                    <TableCell className="sticky right-0 bg-inherit shadow-[-12px_0_18px_-20px_rgba(15,23,42,0.55)]">
+                      <div className="flex justify-end gap-2">
+                        <EditModal config={config} record={record} options={options} />
+                        <DeleteButton config={config} record={record} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <MasterDataPagination
+            config={config}
+            search={search}
+            page={page}
+            pageSize={pageSize}
+            totalRecords={totalRecords}
+            visibleRecords={records.length}
+          />
         </div>
       ) : null}
     </div>

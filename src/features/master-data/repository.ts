@@ -9,6 +9,17 @@ import type {
 
 type RecordValue = string | number | boolean | null;
 
+export type MasterRecordListParams = {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type MasterRecordListResult = {
+  records: MasterRecord[];
+  total: number;
+};
+
 function tableIdentifier(tableName: string) {
   return sql.unsafe(`"${tableName}"`);
 }
@@ -65,11 +76,14 @@ export function validateMasterValues(slug: string, values: Record<string, Record
 
 export async function listMasterRecords(
   slug: string,
-  search = "",
-): Promise<MasterRecord[]> {
+  params: MasterRecordListParams = {},
+): Promise<MasterRecordListResult> {
   const config = getMasterConfig(slug);
   if (!config) throw new Error("Jenis data master tidak ditemukan");
-  const keyword = search.trim();
+  const keyword = params.search?.trim() ?? "";
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(50, Math.max(5, params.pageSize ?? 10));
+  const offset = (page - 1) * pageSize;
   const searchableFields = config.fields.filter((field) => field.table || field.required);
   const searchCondition =
     keyword && searchableFields.length > 0
@@ -78,14 +92,26 @@ export async function listMasterRecords(
           .reduce((previous, current) => sql`${previous} OR ${current}`)
       : sql`TRUE`;
 
-  const rows = await sql<MasterRecord[]>`
-    SELECT *
-    FROM ${tableIdentifier(config.tableName)}
-    WHERE ${searchCondition}
-    ORDER BY id DESC
-  `;
+  const [rows, counts] = await Promise.all([
+    sql<MasterRecord[]>`
+      SELECT *
+      FROM ${tableIdentifier(config.tableName)}
+      WHERE ${searchCondition}
+      ORDER BY id DESC
+      LIMIT ${pageSize}
+      OFFSET ${offset}
+    `,
+    sql<{ total: number }[]>`
+      SELECT COUNT(*)::int AS total
+      FROM ${tableIdentifier(config.tableName)}
+      WHERE ${searchCondition}
+    `,
+  ]);
 
-  return rows;
+  return {
+    records: rows,
+    total: counts[0]?.total ?? 0,
+  };
 }
 
 export async function countMasterRecords() {

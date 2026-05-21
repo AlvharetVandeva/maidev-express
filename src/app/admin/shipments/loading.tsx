@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AdminShipmentListSkeleton } from "@/features/shipments/components/admin-shipment-list";
+import { AdminShipmentListSkeleton } from "@/features/shipments/components/admin-shipment-list-skeleton";
 
 export default function AdminShipmentsLoading() {
   return (

@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserTableSkeletonView } from "@/features/users/components/user-table";
+import { UserTableSkeletonView } from "@/features/users/components/user-table-skeleton";
 
 export default function AdminUsersLoading() {
   return (

@@ -41,7 +41,7 @@ export default async function PublicTrackingPage({
           />
         </section>
         <div className="space-y-8">
-          <TrackingForm defaultValue={resi} />
+          <TrackingForm defaultValue={resi} showResultSkeletonOnSubmit />
           {resi && !result ? (
             <EmptyState title="Nomor resi tidak ditemukan." />
           ) : result ? (

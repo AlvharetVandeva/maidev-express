@@ -133,6 +133,7 @@ async function main() {
       RETURNING id
     `.then((rows) => rows[0])),
   );
+  const kotaNames = ["Jakarta", "Semarang", "Solo", "Yogyakarta", "Bandung"];
 
   const jenisRows = await Promise.all(
     [
@@ -350,110 +351,275 @@ async function main() {
     }
   }
 
-  const [pengirimanRow] = await sql<{ id: number }[]>`
-    INSERT INTO pengiriman (
-      nomor_resi,
-      pelanggan_id,
-      kurir_id,
-      kendaraan_id,
-      jenis_pengiriman_id,
-      kota_asal_id,
-      kota_tujuan_id,
-      nama_pengirim,
-      telepon_pengirim,
-      nama_penerima,
-      telepon_penerima,
-      alamat_pickup,
-      alamat_tujuan,
-      status,
-      dibuat_oleh
-    )
-    VALUES (
-      'MEX-2026-0001',
-      ${pelangganRows[0].id},
-      ${kurirMasterRows[0].id},
-      ${kendaraanRows[0].id},
-      ${jenisRows[0].id},
-      ${kotaRows[0].id},
-      ${kotaRows[1].id},
-      'Toko Sinar Jaya',
-      '+62 812-1111-0000',
-      'Penerima Master',
-      '+62 812-2222-0000',
-      'Gudang Jakarta',
-      'Jl. Pemuda No. 10, Semarang',
-      'dalam_perjalanan',
-      ${admin.id}
-    )
-    ON CONFLICT (nomor_resi)
-    DO UPDATE SET
-      pelanggan_id = EXCLUDED.pelanggan_id,
-      kurir_id = EXCLUDED.kurir_id,
-      kendaraan_id = EXCLUDED.kendaraan_id,
-      jenis_pengiriman_id = EXCLUDED.jenis_pengiriman_id,
-      kota_asal_id = EXCLUDED.kota_asal_id,
-      kota_tujuan_id = EXCLUDED.kota_tujuan_id,
-      status = EXCLUDED.status,
-      diperbarui_pada = CURRENT_TIMESTAMP
-    RETURNING id
-  `;
+  const cargoTransactions = [
+    {
+      nomorResi: "MEX-2026-0001",
+      pelangganIndex: 0,
+      kurirIndex: 0,
+      kendaraanIndex: 0,
+      jenisIndex: 0,
+      asalIndex: 0,
+      tujuanIndex: 1,
+      pengirim: "Toko Sinar Jaya",
+      penerima: "Penerima Semarang",
+      status: "dalam_perjalanan",
+      barangIndex: 0,
+      jumlah: 2,
+      berat: 12,
+      biaya: 67000,
+      asuransi: 5000,
+      statusPembayaran: "belum_dibayar",
+      statusBarang: "dalam_pengiriman",
+      catatan: "Paket fashion siap kirim",
+    },
+    {
+      nomorResi: "MEX-2026-0002",
+      pelangganIndex: 1,
+      kurirIndex: 1,
+      kendaraanIndex: 1,
+      jenisIndex: 1,
+      asalIndex: 0,
+      tujuanIndex: 2,
+      pengirim: "UMKM Makmur",
+      penerima: "Penerima Solo",
+      status: "diambil_kurir",
+      barangIndex: 2,
+      jumlah: 3,
+      berat: 18,
+      biaya: 88500,
+      asuransi: 0,
+      statusPembayaran: "pending",
+      statusBarang: "diproses",
+      catatan: "Bahan makanan kering",
+    },
+    {
+      nomorResi: "MEX-2026-0003",
+      pelangganIndex: 0,
+      kurirIndex: 0,
+      kendaraanIndex: 0,
+      jenisIndex: 2,
+      asalIndex: 0,
+      tujuanIndex: 3,
+      pengirim: "Toko Berkah",
+      penerima: "Penerima Yogyakarta",
+      status: "selesai",
+      barangIndex: 1,
+      jumlah: 1,
+      berat: 8,
+      biaya: 98000,
+      asuransi: 10000,
+      statusPembayaran: "dibayar",
+      statusBarang: "sampai_tujuan",
+      catatan: "Produk keramik, mudah pecah",
+    },
+    {
+      nomorResi: "MEX-2026-0004",
+      pelangganIndex: 1,
+      kurirIndex: 1,
+      kendaraanIndex: 0,
+      jenisIndex: 0,
+      asalIndex: 0,
+      tujuanIndex: 4,
+      pengirim: "CV Maju Bersama",
+      penerima: "Penerima Bandung",
+      status: "gagal",
+      barangIndex: 0,
+      jumlah: 4,
+      berat: 22,
+      biaya: 102000,
+      asuransi: 3000,
+      statusPembayaran: "gagal",
+      statusBarang: "pending",
+      catatan: "Alamat tujuan perlu dikonfirmasi ulang",
+    },
+    {
+      nomorResi: "MEX-2026-0005",
+      pelangganIndex: 0,
+      kurirIndex: null,
+      kendaraanIndex: 1,
+      jenisIndex: 0,
+      asalIndex: 0,
+      tujuanIndex: 1,
+      pengirim: "Toko Utama",
+      penerima: "Penerima Magelang",
+      status: "menunggu_pickup",
+      barangIndex: 2,
+      jumlah: 2,
+      berat: 9,
+      biaya: 56500,
+      asuransi: 0,
+      statusPembayaran: "belum_dibayar",
+      statusBarang: "diproses",
+      catatan: "Menunggu pickup dari gudang",
+    },
+    {
+      nomorResi: "MEX-2026-0006",
+      pelangganIndex: 1,
+      kurirIndex: 0,
+      kendaraanIndex: 1,
+      jenisIndex: 1,
+      asalIndex: 0,
+      tujuanIndex: 2,
+      pengirim: "Warung Lestari",
+      penerima: "Penerima Solo Dua",
+      status: "selesai",
+      barangIndex: 2,
+      jumlah: 5,
+      berat: 16,
+      biaya: 76000,
+      asuransi: 2500,
+      statusPembayaran: "dibayar",
+      statusBarang: "selesai",
+      catatan: "Pesanan repeat customer",
+    },
+  ] as const;
 
-  await sql`
-    INSERT INTO detail_pengiriman (
-      pengiriman_id,
-      total_berat_kg,
-      total_volume,
-      jarak_km,
-      biaya_pengiriman,
-      biaya_asuransi,
-      total_biaya,
-      tanggal_pickup,
-      estimasi_tiba,
-      status_pembayaran
-    )
-    VALUES (${pengirimanRow.id}, 12, 1.5, 450, 67000, 5000, 72000, CURRENT_DATE, CURRENT_DATE + 3, 'belum_dibayar')
-    ON CONFLICT (pengiriman_id)
-    DO UPDATE SET
-      total_berat_kg = EXCLUDED.total_berat_kg,
-      total_volume = EXCLUDED.total_volume,
-      jarak_km = EXCLUDED.jarak_km,
-      biaya_pengiriman = EXCLUDED.biaya_pengiriman,
-      biaya_asuransi = EXCLUDED.biaya_asuransi,
-      total_biaya = EXCLUDED.total_biaya,
-      tanggal_pickup = EXCLUDED.tanggal_pickup,
-      estimasi_tiba = EXCLUDED.estimasi_tiba,
-      status_pembayaran = EXCLUDED.status_pembayaran,
-      diperbarui_pada = CURRENT_TIMESTAMP
-  `;
+  for (const [index, cargo] of cargoTransactions.entries()) {
+    const pickupDate = new Date(Date.now() - index * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    const estimasiDate = new Date(Date.now() + (index + 2) * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    const pelanggan = pelangganRows[cargo.pelangganIndex];
+    const kurir =
+      cargo.kurirIndex === null ? null : kurirMasterRows[cargo.kurirIndex]?.id ?? null;
+    const kendaraan = kendaraanRows[cargo.kendaraanIndex];
+    const jenis = jenisRows[cargo.jenisIndex];
+    const asal = kotaRows[cargo.asalIndex];
+    const tujuan = kotaRows[cargo.tujuanIndex];
+    const tujuanName = kotaNames[cargo.tujuanIndex] ?? "Kota Tujuan";
+    const barang = barangRows[cargo.barangIndex];
+    const total = cargo.biaya + cargo.asuransi;
 
-  await Promise.all(
-    barangRows.slice(0, 2).map((barang, index) => sql`
+    const [pengirimanRow] = await sql<{ id: number }[]>`
+      INSERT INTO pengiriman (
+        nomor_resi,
+        pelanggan_id,
+        kurir_id,
+        kendaraan_id,
+        jenis_pengiriman_id,
+        kota_asal_id,
+        kota_tujuan_id,
+        nama_pengirim,
+        telepon_pengirim,
+        nama_penerima,
+        telepon_penerima,
+        alamat_pickup,
+        alamat_tujuan,
+        status,
+        dibuat_oleh
+      )
+      VALUES (
+        ${cargo.nomorResi},
+        ${pelanggan.id},
+        ${kurir},
+        ${kendaraan.id},
+        ${jenis.id},
+        ${asal.id},
+        ${tujuan.id},
+        ${cargo.pengirim},
+        '+62 812-1111-0000',
+        ${cargo.penerima},
+        '+62 812-2222-0000',
+        ${`Gudang ${cargo.pengirim}, Jakarta`},
+        ${`Jl. Tujuan No. ${index + 1}, ${tujuanName}`},
+        ${cargo.status},
+        ${admin.id}
+      )
+      ON CONFLICT (nomor_resi)
+      DO UPDATE SET
+        pelanggan_id = EXCLUDED.pelanggan_id,
+        kurir_id = EXCLUDED.kurir_id,
+        kendaraan_id = EXCLUDED.kendaraan_id,
+        jenis_pengiriman_id = EXCLUDED.jenis_pengiriman_id,
+        kota_asal_id = EXCLUDED.kota_asal_id,
+        kota_tujuan_id = EXCLUDED.kota_tujuan_id,
+        nama_pengirim = EXCLUDED.nama_pengirim,
+        telepon_pengirim = EXCLUDED.telepon_pengirim,
+        nama_penerima = EXCLUDED.nama_penerima,
+        telepon_penerima = EXCLUDED.telepon_penerima,
+        alamat_pickup = EXCLUDED.alamat_pickup,
+        alamat_tujuan = EXCLUDED.alamat_tujuan,
+        status = EXCLUDED.status,
+        diperbarui_pada = CURRENT_TIMESTAMP
+      RETURNING id
+    `;
+
+    await sql`
+      INSERT INTO detail_pengiriman (
+        pengiriman_id,
+        total_berat_kg,
+        total_volume,
+        jarak_km,
+        biaya_pengiriman,
+        biaya_asuransi,
+        total_biaya,
+        tanggal_pickup,
+        estimasi_tiba,
+        status_pembayaran
+      )
+      VALUES (
+        ${pengirimanRow.id},
+        ${cargo.berat},
+        1.5,
+        ${250 + index * 40},
+        ${cargo.biaya},
+        ${cargo.asuransi},
+        ${total},
+        ${pickupDate},
+        ${estimasiDate},
+        ${cargo.statusPembayaran}
+      )
+      ON CONFLICT (pengiriman_id)
+      DO UPDATE SET
+        total_berat_kg = EXCLUDED.total_berat_kg,
+        total_volume = EXCLUDED.total_volume,
+        jarak_km = EXCLUDED.jarak_km,
+        biaya_pengiriman = EXCLUDED.biaya_pengiriman,
+        biaya_asuransi = EXCLUDED.biaya_asuransi,
+        total_biaya = EXCLUDED.total_biaya,
+        tanggal_pickup = EXCLUDED.tanggal_pickup,
+        estimasi_tiba = EXCLUDED.estimasi_tiba,
+        status_pembayaran = EXCLUDED.status_pembayaran,
+        diperbarui_pada = CURRENT_TIMESTAMP
+    `;
+
+    await sql`
+      DELETE FROM pengiriman_barang
+      WHERE pengiriman_id = ${pengirimanRow.id}
+    `;
+
+    await sql`
       INSERT INTO pengiriman_barang (
         pengiriman_id,
         barang_id,
         jumlah,
         berat_kg,
+        status_barang,
         panjang_cm,
         lebar_cm,
         tinggi_cm,
         catatan
       )
-      VALUES (${pengirimanRow.id}, ${barang.id}, ${index + 1}, ${index === 0 ? 4 : 8}, 40, 30, 25, 'Sample barang transaksi')
-      ON CONFLICT (pengiriman_id, barang_id)
-      DO UPDATE SET
-        jumlah = EXCLUDED.jumlah,
-        berat_kg = EXCLUDED.berat_kg,
-        panjang_cm = EXCLUDED.panjang_cm,
-        lebar_cm = EXCLUDED.lebar_cm,
-        tinggi_cm = EXCLUDED.tinggi_cm,
-        catatan = EXCLUDED.catatan
-    `),
-  );
+      VALUES (
+        ${pengirimanRow.id},
+        ${barang.id},
+        ${cargo.jumlah},
+        ${cargo.berat},
+        ${cargo.statusBarang},
+        40,
+        30,
+        25,
+        ${cargo.catatan}
+      )
+    `;
 
-  await sql`
-    INSERT INTO log_pengiriman (pengiriman_id, status, catatan, lokasi, diperbarui_oleh)
-    VALUES (${pengirimanRow.id}, 'dalam_perjalanan', 'Sample transaksi master dibuat', 'Semarang', ${admin.id})
-  `;
+    await sql`
+      INSERT INTO log_pengiriman (pengiriman_id, status, catatan, lokasi, diperbarui_oleh)
+      VALUES (${pengirimanRow.id}, ${cargo.status}, 'Seed transaksi cargo', ${tujuanName}, ${admin.id})
+    `;
+  }
 }
 
 main()

@@ -1,14 +1,11 @@
 import { redirect } from "next/navigation";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { AdminShipmentList } from "@/features/shipments/components/admin-shipment-list";
-import { ShipmentCreateModal } from "@/features/shipments/components/shipment-create-modal";
-import { listAllShipments } from "@/features/shipments/service";
+import { CargoAdminManager } from "@/features/cargo/components/cargo-admin-manager";
+import { getAdminCargoShipments, getCargoOptions } from "@/features/cargo/service";
 import {
-  isShipmentStatus,
-  type ShipmentStatus,
-} from "@/features/shipments/types";
-import { listCouriers, listCustomers } from "@/features/users/service";
+  isCargoStatus,
+  type CargoStatus,
+} from "@/features/cargo/types";
 
 export const dynamic = "force-dynamic";
 
@@ -18,19 +15,18 @@ export default async function AdminShipmentsPage({
   searchParams: Promise<{ status?: string; q?: string; page?: string; perPage?: string }>;
 }) {
   const params = await searchParams;
-  const status = params.status && isShipmentStatus(params.status) ? params.status : "all";
+  const status = params.status && isCargoStatus(params.status) ? params.status : "all";
   const search = params.q?.trim() ?? "";
   const page = Math.max(1, Number(params.page) || 1);
   const pageSize = Math.min(50, Math.max(5, Number(params.perPage) || 10));
-  const [{ shipments, total }, couriers, customers] = await Promise.all([
-    listAllShipments({
-      status: status as ShipmentStatus | "all",
+  const [{ shipments, total }, options] = await Promise.all([
+    getAdminCargoShipments({
+      status: status as CargoStatus | "all",
       search,
       page,
       pageSize,
     }),
-    listCouriers(),
-    listCustomers(),
+    getCargoOptions(),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -46,26 +42,14 @@ export default async function AdminShipmentsPage({
   }
 
   return (
-    <>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <PageHeader
-          title="Kelola Pengiriman"
-          description="Cari, filter, tambah, assign kurir, dan update status pengiriman."
-        />
-        <ShipmentCreateModal couriers={couriers} customers={customers} />
-      </div>
-
-      <div className="space-y-6">
-        <AdminShipmentList
-          shipments={shipments}
-          couriers={couriers}
-          search={search}
-          status={status}
-          page={page}
-          pageSize={pageSize}
-          totalRecords={total}
-        />
-      </div>
-    </>
+    <CargoAdminManager
+      shipments={shipments}
+      options={options}
+      search={search}
+      status={status}
+      page={page}
+      pageSize={pageSize}
+      totalRecords={total}
+    />
   );
 }

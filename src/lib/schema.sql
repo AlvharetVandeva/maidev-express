@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS barang (
 CREATE TABLE IF NOT EXISTS pengiriman (
   id SERIAL PRIMARY KEY,
   nomor_resi VARCHAR(50) UNIQUE NOT NULL,
-  pelanggan_id INTEGER NOT NULL REFERENCES pelanggan(id) ON DELETE RESTRICT,
+  pelanggan_id INTEGER REFERENCES pelanggan(id) ON DELETE SET NULL,
   kurir_id INTEGER REFERENCES kurir(id) ON DELETE SET NULL,
   kendaraan_id INTEGER REFERENCES kendaraan(id) ON DELETE SET NULL,
   jenis_pengiriman_id INTEGER NOT NULL REFERENCES jenis_pengiriman(id) ON DELETE RESTRICT,
@@ -204,6 +204,15 @@ CREATE TABLE IF NOT EXISTS pengiriman_barang (
   barang_id INTEGER NOT NULL REFERENCES barang(id) ON DELETE RESTRICT,
   jumlah INTEGER NOT NULL DEFAULT 1,
   berat_kg NUMERIC(10, 2),
+  status_barang VARCHAR(50) NOT NULL DEFAULT 'diproses' CHECK (
+    status_barang IN (
+      'diproses',
+      'dalam_pengiriman',
+      'sampai_tujuan',
+      'pending',
+      'selesai'
+    )
+  ),
   panjang_cm NUMERIC(10, 2),
   lebar_cm NUMERIC(10, 2),
   tinggi_cm NUMERIC(10, 2),
@@ -211,6 +220,12 @@ CREATE TABLE IF NOT EXISTS pengiriman_barang (
   dibuat_pada TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (pengiriman_id, barang_id)
 );
+
+ALTER TABLE pengiriman_barang
+  ADD COLUMN IF NOT EXISTS status_barang VARCHAR(50) NOT NULL DEFAULT 'diproses';
+
+ALTER TABLE pengiriman
+  ALTER COLUMN pelanggan_id DROP NOT NULL;
 
 CREATE TABLE IF NOT EXISTS log_pengiriman (
   id SERIAL PRIMARY KEY,

@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Maidev Express
 
-## Getting Started
+Maidev Express adalah aplikasi Sistem Informasi Web untuk logistik/pengiriman darat UMKM. Project memakai Next.js App Router, TypeScript, Tailwind CSS, PostgreSQL Neon/Vercel compatible, dan query langsung dengan package `postgres` tanpa ORM.
 
-First, run the development server:
+## Fitur Utama
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Login role-based: admin, kurir, customer.
+- Dashboard responsif untuk setiap role.
+- Public tracking nomor resi.
+- Admin users management.
+- Admin data master: kota, pelanggan, kurir, kendaraan, jenis pengiriman, tarif, dan barang.
+- Admin CRUDS cargo sesuai UGD SIWEB:
+  - Create data cargo dengan no resi auto generated.
+  - Read data dari database.
+  - Update/edit data lama.
+  - Delete data pengiriman.
+  - Search berdasarkan no resi, nama pengirim, nama penerima, dan nama barang.
+
+## Tech Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- PostgreSQL
+- `postgres`
+- `zod`
+- `bcryptjs`
+- `jose`
+- `lucide-react`
+- `recharts`
+- pnpm
+
+## Setup
+
+Isi `.env.local`:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST.neon.tech/DBNAME?sslmode=require&channel_binding=require"
+JWT_SECRET="change-this-secret-minimum-32-characters"
+APP_URL="http://localhost:3000"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Install dependency:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Jalankan schema dan seed:
 
-## Learn More
+```bash
+pnpm seed
+```
 
-To learn more about Next.js, take a look at the following resources:
+Jalankan development server:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Buka `http://localhost:3000`.
 
-## Deploy on Vercel
+## Akun Demo
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Password semua akun demo:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```txt
+password123
+```
+
+```txt
+Admin    : admin@maidev.test
+Kurir    : kurir@maidev.test
+Customer : customer@maidev.test
+```
+
+## Halaman Penting
+
+- `/login`
+- `/tracking`
+- `/admin/dashboard`
+- `/admin/shipments`
+- `/admin/master-data/kendaraan`
+- `/admin/master-data/barang`
+- `/admin/users`
+- `/courier/tasks`
+- `/customer/shipments`
+
+## Validasi
+
+Gunakan pnpm:
+
+```bash
+pnpm lint
+pnpm build
+```
+
+Project ini tidak menggunakan Prisma, Drizzle, Sequelize, TypeORM, Knex, atau ORM lain.
